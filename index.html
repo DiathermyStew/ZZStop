@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d0d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="ZZ Stop">
+  <title>ZZ Stop</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #1a1a1a;
+      --surface2:  #242424;
+      --amber:     #F5A623;
+      --amber-dim: #7a5010;
+      --text:      #e8e8e8;
+      --muted:     #5a5a5a;
+      --green:     #4CAF50;
+      --red:       #e53935;
+      --nav-h:     62px;
+      --hdr-h:     54px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .hdr {
+      height: var(--hdr-h);
+      background: #111;
+      border-bottom: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .logo-wrap { flex-shrink: 0; }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px;
+      color: var(--amber);
+      letter-spacing: 3px;
+      line-height: 1;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .hdr-stop {
+      flex: 1;
+      text-align: right;
+      overflow: hidden;
+      display: none;
+    }
+
+    .hdr-stop-name {
+      font-size: 13px;
+      color: var(--amber);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hdr-stop-id {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* ── Views ── */
+    .view {
+      display: none;
+      padding: 14px 14px calc(var(--nav-h) + 14px);
+      min-height: 100%;
+    }
+    .view.active { display: block; }
+
+    /* ── Search ── */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    #searchInput {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 13px 42px 13px 14px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: 'Barlow', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #searchInput:focus { border-color: var(--amber); }
+    #searchInput::placeholder { color: var(--muted); }
+
+    #clearBtn {
+      position: absolute;
+      right: 12px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      color: var(--muted);
+      font-size: 18px;
+      cursor: pointer;
+      display: none;
+      padding: 4px;
+    }
+
+    .hint {
+      text-align: center;
+      padding: 52px 16px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .hint-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      color: var(--amber-dim);
+      margin-bottom: 6px;
+    }
+
+    /* ── Stop list items ── */
+    .stop-list { display: flex; flex-direction: column; gap: 7px; }
+
+    .stop-item {
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 13px 12px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: border-color 0.15s, background 0.1s;
+    }
+
+    .stop-item:active { background: var(--surface2); border-color: var(--amber-dim); }
+
+    .stop-icon {
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px;
+      flex-shrink: 0;
+    }
+
+    .stop-info { flex: 1; min-width: 0; }
+
+    .stop-desc {
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stop-meta {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .fav-btn {
+      background: none; border: none;
+      font-size: 22px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .fav-btn.on { color: var(--amber); }
+
+    /* ── Arrivals view ── */
+    .arr-hdr { margin-bottom: 14px; }
+
+    .arr-stop-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: var(--amber);
+      letter-spacing: 1px;
+      line-height: 1.1;
+    }
+
+    .arr-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .arr-ticker {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      flex: 1;
+    }
+
+    .refresh-btn {
+      background: none; border: none;
+      color: var(--amber-dim);
+      font-family: 'Barlow', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .arr-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .arr-item {
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 13px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-left: 3px solid var(--surface2);
+    }
+
+    .arr-item.live  { border-left-color: var(--green); }
+    .arr-item.late  { border-left-color: var(--red); }
+    .arr-item.sched { border-left-color: var(--muted); }
+
+    .arr-route {
+      width: 46px; height: 46px;
+      border-radius: 8px;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: var(--amber);
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+
+    .arr-info { flex: 1; min-width: 0; }
+
+    .arr-sign {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .arr-status {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .arr-time { text-align: right; flex-shrink: 0; }
+
+    .arr-mins {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .arr-mins.due  { color: var(--amber); animation: pulse 1s ease-in-out infinite; }
+    .arr-mins.soon { color: var(--green); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.45; }
+    }
+
+    .arr-mins-lbl {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Favorites view ── */
+    .sect-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      border-bottom: 1px solid #1e1e1e;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    /* ── States ── */
+    .loading {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 30px; height: 30px;
+      border: 3px solid #2a2a2a;
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 14px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .empty-icon { font-size: 44px; display: block; margin-bottom: 10px; opacity: 0.35; }
+
+    .err-banner {
+      background: #200;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--red);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    /* ── Flash screen ── */
+    #flash {
+      display: none;
+      position: fixed; inset: 0;
+      background: #fff;
+      z-index: 999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+
+    #flash.on { display: flex; }
+
+    .flash-msg {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: #111;
+      letter-spacing: 4px;
+    }
+
+    .flash-close {
+      background: #111; color: #fff;
+      border: none; border-radius: 30px;
+      padding: 13px 36px;
+      font-family: 'Barlow', sans-serif;
+      font-weight: 600; font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* ── Bottom nav ── */
+    .nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: #111;
+      border-top: 1px solid #1e1e1e;
+      display: flex;
+      z-index: 100;
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: none; border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'Barlow', sans-serif;
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: color 0.15s;
+    }
+
+    .nav-btn .ni { font-size: 22px; line-height: 1; }
+    .nav-btn.active { color: var(--amber); }
+    .nav-btn.flash-nav { color: #ccc; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="hdr">
+    <div class="logo-wrap">
+      <div class="logo">ZZ Stop</div>
+      <div class="logo-sub">Portland Transit</div>
+    </div>
+    <div class="hdr-stop" id="hdrStop">
+      <div class="hdr-stop-name" id="hdrName"></div>
+      <div class="hdr-stop-id" id="hdrId"></div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Search -->
+    <div class="view active" id="viewSearch">
+      <div class="search-wrap">
+        <input id="searchInput" type="text" placeholder="Stop name or ID…"
+               autocomplete="off" autocorrect="off" spellcheck="false">
+        <button id="clearBtn">✕</button>
+      </div>
+      <div id="searchOut">
+        <div class="hint">
+          <div class="hint-title">Waitin' on the Bus?</div>
+          Search by stop name or enter a stop ID directly
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrivals -->
+    <div class="view" id="viewArrivals">
+      <div class="arr-hdr">
+        <div class="arr-stop-name" id="arrStopName">—</div>
+        <div class="arr-meta">
+          <span class="arr-ticker" id="arrTicker"></span>
+          <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="arrOut">
+        <div class="loading"><div class="spinner"></div>Loading…</div>
+      </div>
+    </div>
+
+    <!-- Favorites -->
+    <div class="view" id="viewFavorites">
+      <div class="sect-label">Saved Stops</div>
+      <div id="favOut"></div>
+    </div>
+
+  </main>
+
+  <!-- Flash screen -->
+  <div id="flash">
+    <div class="flash-msg">🚌 I'M HERE</div>
+    <button class="flash-close" id="flashClose">Tap to close</button>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="nav">
+    <button class="nav-btn active" id="navSearch" onclick="showView('Search')">
+      <span class="ni">🔍</span>Search
+    </button>
+    <button class="nav-btn" id="navArrivals" onclick="showView('Arrivals')">
+      <span class="ni">🚌</span>Arrivals
+    </button>
+    <button class="nav-btn" id="navFavorites" onclick="showView('Favorites')">
+      <span class="ni">★</span>Saved
+    </button>
+    <button class="nav-btn flash-nav" onclick="openFlash()">
+      <span class="ni">💡</span>Flash
+    </button>
+  </nav>
+
+  <script>
+    /* ── Config ── */
+    const API_KEY = '3395BC70EA46D46A07BC9DCCB';
+    const BASE    = 'https://developer.trimet.org/ws/V1';
+
+    /* ── State ── */
+    let currentView   = 'Search';
+    let selectedStop  = null;   // { locid, desc, dir }
+    let searchResults = [];
+    let refreshTimer  = null;
+    let lastRefresh   = null;
+    let wakeLock      = null;
+
+    // Keyed store so onclick handlers don't embed JSON in HTML
+    const stopStore = {};
+
+    function stash(stop) { stopStore[stop.locid] = stop; return stop; }
+    function recall(id)  { return stopStore[id]; }
+
+    /* ── Favorites ── */
+    function loadFavs() {
+      try { return JSON.parse(localStorage.getItem('zzstop_favs') || '[]'); }
+      catch { return []; }
+    }
+    function saveFavs() {
+      localStorage.setItem('zzstop_favs', JSON.stringify(favs));
+    }
+
+    let favs = loadFavs();
+    favs.forEach(s => stash(s));
+
+    function isFav(locid) { return favs.some(f => f.locid === locid); }
+
+    function toggleFav(locid) {
+      const stop = recall(locid);
+      if (!stop) return;
+      if (isFav(locid)) {
+        favs = favs.filter(f => f.locid !== locid);
+      } else {
+        favs.push(stop);
+      }
+      saveFavs();
+    }
+
+    /* ── API ── */
+    async function apiSearchText(q) {
+      const r = await fetch(`${BASE}/stops?query=${encodeURIComponent(q)}&appID=${API_KEY}&json=true`);
+      const d = await r.json();
+      return d.resultSet?.location || [];
+    }
+
+    async function apiSearchById(id) {
+      const r = await fetch(`${BASE}/arrivals?locIDs=${id}&appID=${API_KEY}&json=true`);
+      const d = await r.json();
+      return d.resultSet?.location || [];
+    }
+
+    async function apiArrivals(locid) {
+      const r = await fetch(`${BASE}/arrivals?locIDs=${locid}&appID=${API_KEY}&json=true`);
+      const d = await r.json();
+      return d.resultSet;
+    }
+
+    /* ── View switching ── */
+    function showView(name) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+
+      currentView = name;
+
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-btn[id^="nav"]').forEach(b => b.classList.remove('active'));
+
+      document.getElementById('view' + name).classList.add('active');
+      const nb = document.getElementById('nav' + name);
+      if (nb) nb.classList.add('active');
+
+      if (name === 'Arrivals') {
+        if (selectedStop) {
+          doLoadArrivals();
+          refreshTimer = setInterval(doLoadArrivals, 30000);
+        }
+      } else if (name === 'Favorites') {
+        renderFavs();
+      }
+    }
+
+    /* ── Search logic ── */
+    let debounce;
+    const inp  = document.getElementById('searchInput');
+    const clrB = document.getElementById('clearBtn');
+
+    inp.addEventListener('input', () => {
+      const q = inp.value.trim();
+      clrB.style.display = q ? 'block' : 'none';
+      clearTimeout(debounce);
+
+      if (q.length < 2) {
+        document.getElementById('searchOut').innerHTML = resetHint();
+        return;
+      }
+
+      document.getElementById('searchOut').innerHTML = loadingHTML();
+      debounce = setTimeout(() => doSearch(q), 420);
+    });
+
+    clrB.addEventListener('click', () => {
+      inp.value = '';
+      clrB.style.display = 'none';
+      document.getElementById('searchOut').innerHTML = resetHint();
+      searchResults = [];
+      inp.focus();
+    });
+
+    async function doSearch(q) {
+      try {
+        const isId = /^\d+$/.test(q);
+        const results = isId ? await apiSearchById(q) : await apiSearchText(q);
+        results.forEach(s => stash(s));
+        searchResults = results;
+        renderSearchResults();
+      } catch (e) {
+        document.getElementById('searchOut').innerHTML = errHTML('Could not reach TriMet. Check your connection.');
+      }
+    }
+
+    function renderSearchResults() {
+      const el = document.getElementById('searchOut');
+      if (!searchResults.length) {
+        el.innerHTML = `<div class="empty"><span class="empty-icon">🚏</span>No stops found.<br>Try a different name or stop number.</div>`;
+        return;
+      }
+      el.innerHTML = `<div class="stop-list">${searchResults.slice(0, 25).map(renderStopCard).join('')}</div>`;
+    }
+
+    /* ── Stop card ── */
+    function renderStopCard(stop) {
+      const fav  = isFav(stop.locid);
+      const icon = stopIcon(stop);
+      return `
+        <div class="stop-item" onclick="pickStop(${stop.locid})">
+          <div class="stop-icon">${icon}</div>
+          <div class="stop-info">
+            <div class="stop-desc">${esc(stop.desc)}</div>
+            <div class="stop-meta">Stop #${stop.locid}${stop.dir ? ' · ' + stop.dir : ''}</div>
+          </div>
+          <button class="fav-btn ${fav ? 'on' : ''}"
+                  onclick="event.stopPropagation(); tapFav(${stop.locid})"
+                  title="${fav ? 'Remove from saved' : 'Save stop'}">
+            ${fav ? '★' : '☆'}
+          </button>
+        </div>`;
+    }
+
+    function stopIcon(stop) {
+      const d = (stop.desc || '').toLowerCase();
+      if (d.includes('max') || d.includes('rail')) return '🚊';
+      if (d.includes('streetcar'))                  return '🚃';
+      return '🚌';
+    }
+
+    function pickStop(locid) {
+      selectedStop = recall(locid);
+      if (!selectedStop) return;
+      // Update header
+      document.getElementById('hdrStop').style.display = 'block';
+      document.getElementById('hdrName').textContent = selectedStop.desc;
+      document.getElementById('hdrId').textContent   = `Stop #${selectedStop.locid}`;
+      showView('Arrivals');
+    }
+
+    function tapFav(locid) {
+      toggleFav(locid);
+      // Re-render whichever list is showing
+      if (currentView === 'Search')     renderSearchResults();
+      if (currentView === 'Favorites')  renderFavs();
+    }
+
+    /* ── Arrivals ── */
+    async function doLoadArrivals() {
+      if (!selectedStop) return;
+      document.getElementById('arrStopName').textContent = selectedStop.desc;
+      try {
+        const rs    = await apiArrivals(selectedStop.locid);
+        const items = rs?.arrival || [];
+        lastRefresh = new Date();
+        document.getElementById('arrTicker').textContent =
+          `Updated ${lastRefresh.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
+        renderArrivals(items);
+      } catch (e) {
+        document.getElementById('arrOut').innerHTML = errHTML('Could not load arrivals. Check your connection.');
+      }
+    }
+
+    function renderArrivals(items) {
+      const el  = document.getElementById('arrOut');
+      const now = Date.now();
+
+      // Filter past, sort by time
+      const upcoming = items
+        .filter(a => (a.estimated || a.scheduled) > now - 60000)
+        .sort((a, b) => (a.estimated || a.scheduled) - (b.estimated || b.scheduled));
+
+      if (!upcoming.length) {
+        el.innerHTML = `<div class="empty"><span class="empty-icon">🕐</span>No arrivals in the next hour.</div>`;
+        return;
+      }
+
+      el.innerHTML = `<div class="arr-list">${upcoming.map(a => arrCard(a, now)).join('')}</div>`;
+    }
+
+    function arrCard(a, now) {
+      const time  = a.estimated || a.scheduled;
+      const mins  = Math.round((time - now) / 60000);
+      const isLate = a.estimated && (a.estimated - a.scheduled > 90000);
+      const cls   = a.estimated ? (isLate ? 'late' : 'live') : 'sched';
+      const tCls  = mins <= 0 ? 'due' : mins <
